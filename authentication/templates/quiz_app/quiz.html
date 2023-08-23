@@ -1,0 +1,133 @@
+{% extends 'quiz_app/base.html' %}
+
+{% block content %}
+
+<style>
+   .pagination-container{
+        position: absolute;
+        left: 45%;
+        top: 110%;
+       }
+    .submit-btn {
+        display: inline-block;
+        padding: 10px 20px;
+        background-color: #007bff;
+        color: #fff;
+        text-decoration: none;
+        border: none;
+        cursor: pointer;
+        border-radius: 4px;
+  }
+    
+
+</style>
+<div class="question-container">
+  {% for question in questions %}
+  <div class="question {% if forloop.first %}active{% else %}hidden{% endif %}">
+    <h2>{{ question.question_text }}</h2>
+    <form method="post">
+      {% csrf_token %}
+      <ul>
+        {% for choice in question.choice_set.all %}
+        <li>
+          <input type="radio" name="question_{{ question.id }}" value="{{ choice.id }}"
+            data-is-correct="{{ choice.is_correct }}">
+          {{ choice.choice_text }}
+        </li>
+        {% endfor %}
+      </ul>
+      {% if forloop.last %}
+    <div class="submit-container">
+      <form action="{% url 'score_view' %}" method="GET" id="quiz-form">
+        Form content here 
+        <a href="{% url 'score_view' %}" class="submit-btn">Submit</a>
+        <input type="hidden" name="score" value="{{ score }}">
+        <input type="hidden" name="total" value="{{ total_questions }}">
+      </form>
+    </div>
+       
+     {% else %}
+    <div class="pagination-container">
+      <ul class="pagination">
+        <li class="page-item">
+          <a class="page-link" href="#" aria-label="Previous">
+            <span aria-hidden="true">&laquo;</span>
+          </a>
+        </li>
+        {% for question in questions %}
+        <li class="page-item"><a class="page-link" href="#" data-index="{{ forloop.counter }}">{{ forloop.counter }}</a>
+        </li>
+        {% endfor %}
+        <li class="page-item">
+          <a class="page-link" href="#" aria-label="Next">
+            <span aria-hidden="true">&raquo;</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+
+      {% endif %}
+    </form>
+  </div>
+  {% endfor %}
+</div>
+
+
+
+
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const questions = document.querySelectorAll(".question");
+    const pageLinks = document.querySelectorAll(".page-link");
+    const nextButtons = document.querySelectorAll(".next-btn");
+    let currentIndex = 0;
+    let score = 0;  // Initialize the score
+
+    function showQuestion(index) {
+      questions.forEach((question, i) => {
+        if (i === index) {
+          question.classList.add("active");
+        } else {
+          question.classList.remove("active");
+        }
+      });
+    }
+
+    function updateScore(isCorrect) {
+      if (isCorrect) {
+        score += 1;  
+
+      }
+    }
+
+    function navigateToIndex(index) {
+      currentIndex = index;
+      showQuestion(currentIndex);
+    }
+
+    nextButtons.forEach((button, i) => {
+      button.addEventListener("click", (event) => {
+        event.preventDefault();
+        const selectedOption = document.querySelector(`input[name="question_${currentIndex + 1}"]:checked`);
+        const isCorrect = selectedOption && selectedOption.getAttribute("data-is-correct") === "true";
+        updateScore(isCorrect);
+        currentIndex = Math.min(currentIndex + 1, questions.length - 1);
+        showQuestion(currentIndex);
+      });
+    });
+
+    pageLinks.forEach((link) => {
+      link.addEventListener("click", (event) => {
+        event.preventDefault();
+        const index = parseInt(link.getAttribute("data-index")) - 1;
+        navigateToIndex(index);
+      });
+    });
+
+    showQuestion(currentIndex);
+  });
+</script>
+
+{% endblock %}
+
